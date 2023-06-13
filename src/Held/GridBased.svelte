@@ -1,19 +1,22 @@
 <script lang="ts">
-	import Pin from '../Lib/Pin.svelte';
+	const mapX = 32;
+	const mapY = 32;
+
+	let Map: HTMLImageElement;
 
 	let pinWidth = 100;
-	let pinHeight = 100;
 
-	let Player1Position = {
-		width: 100,
-		height: 100
-	};
+	let increments = [100 / mapX, 100 / mapY];
+
+	let Player1Pos = [3, 1];
+	let Player1PositionPercentage = [0, 0];
 
 	console.log('Starting new user');
 
 	let playerID = -1;
 
 	import { onMount } from 'svelte';
+
 	onMount(() => {
 		console.log('Loaded');
 
@@ -31,39 +34,35 @@
 		};
 	});
 
-	let mapDimensions = [32, 32];
 	let imgUrl = '/map_32x32.png';
-	let Map: HTMLImageElement;
 
-	function MapLoaded() {
-		let MapWidth = Map.width;
-		let MapHeight = Map.height;
-		pinWidth = MapWidth / mapDimensions[0];
-		pinHeight = MapHeight / mapDimensions[1];
+	function snapPin() {
+		console.log(Map.width);
+		pinWidth = Map.width / mapX;
+
+		increments.forEach((value, index) => {
+			Player1PositionPercentage[index] = Player1Pos[index] * increments[index];
+		});
 	}
 </script>
 
 <main>
 	<div class="Content">
-		<img
-			class="MapImage"
-			src={imgUrl}
-			alt="Oh fuk where is the map?"
-			bind:this={Map}
-			on:load={MapLoaded}
-		/>
+		<img class="MapImage" src={imgUrl} alt="Oh fuk where is the map?" bind:this={Map} />
 
-		<Pin
-			left={Player1Position.width}
-			top={Player1Position.height}
-			width={pinWidth}
-			height={pinHeight}
-		/>
+		<div
+			class="Pin"
+			id="Player1"
+			style="top: {Player1PositionPercentage[1]}%; left: {Player1PositionPercentage[0]}%;"
+		>
+			<img src="/Pin.png" alt="Oh fuk no pin" style="width: {pinWidth}px" />
+		</div>
 	</div>
 
 	<div class="ToolBar">
 		<h1>Hello User!</h1>
 		<p>You are player {playerID}</p>
+		<button on:click={snapPin}>Snap Player to Grid</button>
 	</div>
 </main>
 
