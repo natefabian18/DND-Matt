@@ -1,7 +1,16 @@
 import WebSocket, { WebSocketServer } from 'ws';
 
-const port = 8080;
-let wss: WebSocketServer;
+import { MessageTypes } from '../src/Lib/messageTypes';
+import type * as MessageFormats from '../src/Lib/messagesFormat';
+import type { Msg } from '../src/Lib/messagesFormat';
+import type { PinData } from '../src/Lib/Pin';
+
+const port = 10232;
+let SocketServer: WebSocketServer;
+
+const PinList: Array<PinData> = [];
+
+const ConnectionList: Array<WebSocket> = [];
 
 export const PluginValue = {
 	name: 'WebSocketServer',
@@ -9,7 +18,7 @@ export const PluginValue = {
 		let globalPlayerCounter = 1;
 
 		console.log('Setting up the webSocket Server');
-		wss = new WebSocketServer({
+		SocketServer = new WebSocketServer({
 			port: port,
 			perMessageDeflate: {
 				zlibDeflateOptions: {
@@ -34,19 +43,61 @@ export const PluginValue = {
 
 		console.log(`Web Socket Server Setup on port ${port}`);
 
-		wss.on('connection', (ws) => {
+		SocketServer.on('connection', (SocketConnection) => {
 			console.log('Connection Opened');
 
-			ws.send(JSON.stringify({ playerID: globalPlayerCounter++ }));
+			ConnectionList.push(SocketConnection);
 
-			ws.on('message', (message) => {
-				const data = JSON.parse(message);
-				console.log(data);
-				ws.send(
-					JSON.stringify({
-						message: 'We read you loud and clear!'
-					})
-				);
+			const helloClientData: MessageFormats.HelloClient = {
+				MsgType: MessageTypes.HelloClient,
+				playerID: globalPlayerCounter++,
+				PinDataList: PinList
+			};
+			SocketConnection.send(JSON.stringify(helloClientData));
+
+			SocketConnection.on('message', (message) => {
+				//@ts-ignore Ignore MSG format it does parse
+				const data: MessageFormats.UnknownMsg = JSON.parse(message);
+
+				switch (data.MsgType) {
+					case MessageTypes.HelloServer:
+						{
+							console.log('Client Connected');
+						}
+						break;
+					case MessageTypes.HelloClient:
+						{
+							console.warn('Server got hello client message?');
+						}
+						break;
+					case MessageTypes.PinMoved: {
+						const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
+
+						if (FindPin == -1) {
+							PinList.push(data.PinData);
+						} else {
+							PinList[FindPin] = data.PinData;
+						}
+
+						//Pin moved send message to everyone
+						ConnectionList.filter((item) => item != SocketConnection).forEach((Connection) => {
+							const MsgData: Msg = {
+								...data,
+								MsgType: MessageTypes.PinMoved
+							};
+
+							Connection.send(JSON.stringify(MsgData));
+						});
+					}
+				}
+			});
+
+			SocketConnection.on('close', (message) => {
+				console.log('Connection to socket closed', message);
+			});
+
+			SocketConnection.on('error', (message) => {
+				console.warn('Connection to socket errored', message);
 			});
 		});
 	}
