@@ -18,6 +18,7 @@ export interface HelloClient extends Msg {
 export interface PinMoved extends Msg {
 	MsgType: MessageTypes.PinMoved;
 	PinData: PinData;
+	Changer: string;
 }
 
 export interface BadMessage {

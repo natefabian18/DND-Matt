@@ -4,9 +4,21 @@
 	import type { UnknownMsg } from '../Lib/messagesFormat';
 	import { onMount } from 'svelte';
 	import { MessageTypes } from '../Lib/messageTypes';
+	import { Global } from '../Lib/globals';
+
+	let DMTools = false;
+	let DevTools = false;
+	Global.subscribe((Global) => {
+		DMTools = Global.DMTools;
+		DevTools = Global.DevTools;
+	});
+
+	$: DMTools, DevTools, updateGlobal();
 
 	let pinWidth = 100;
 	let pinHeight = 100;
+
+	let playerName = 'Unknown Player';
 
 	let globalPinCounter = 1;
 
@@ -54,6 +66,14 @@
 					console.log('Client Got Hello Setting Player ID');
 					playerID = data.playerID;
 					PinList = data.PinDataList;
+					globalPinCounter =
+						data.PinDataList.reduce((previous, current) => {
+							if (current.ID > previous) {
+								return current.ID;
+							} else {
+								return previous;
+							}
+						}, 0) + 1;
 					break;
 				case MessageTypes.PinMoved:
 					let ChangedPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
@@ -61,6 +81,14 @@
 					if (ChangedPin == -1) {
 						PinList.push(data.PinData);
 						PinList = PinList;
+						globalPinCounter =
+							PinList.reduce((previous, current) => {
+								if (current.ID > previous) {
+									return current.ID;
+								} else {
+									return previous;
+								}
+							}, 0) + 1;
 					} else {
 						PinList[ChangedPin] = data.PinData;
 					}
@@ -93,7 +121,8 @@
 
 			let msg = {
 				MsgType: MessageTypes.PinMoved,
-				PinData: item
+				PinData: item,
+				Changer: playerName
 			};
 
 			ws.send(JSON.stringify(msg));
@@ -101,9 +130,13 @@
 	}
 
 	function AddPin() {
-		PinList.push(PinFactory('Nate', 300, 300));
+		PinList.push(PinFactory(playerName, 300, 300));
 		PinList = PinList;
 		DumpMovedPins();
+	}
+
+	function updateGlobal() {
+		Global.set({ DevTools, DMTools });
 	}
 </script>
 
@@ -123,6 +156,7 @@
 				bind:trueLeft={PinData.width}
 				bind:trueTop={PinData.height}
 				bind:Modified={PinData.Modified}
+				bind:name={PinData.Name}
 				width={pinWidth}
 				height={pinHeight}
 			/>
@@ -130,12 +164,29 @@
 	</div>
 
 	<div class="ToolBar">
-		<h1>Hello User!</h1>
-		<p>You are player {playerID}</p>
+		<button
+			on:click={() => {
+				DMTools = !DMTools;
+			}}>Toggle DM Tools</button
+		>
+
+		<input type="text" bind:value={playerName} />
 		<button on:click={AddPin}>Add Pin</button>
-		<dir>
-			{JSON.stringify(PinList)}
-		</dir>
+
+		{#if DMTools}
+			<button
+				on:click={() => {
+					DevTools = !DevTools;
+				}}>Toggle Dev Tools</button
+			>
+			<p>You are player {playerID}</p>
+
+			{#if DevTools}
+				<dir>
+					{JSON.stringify(PinList, null, 2)}
+				</dir>
+			{/if}
+		{/if}
 	</div>
 </main>
 
@@ -144,6 +195,17 @@
 		position: absolute;
 		top: 0.25em;
 		left: 0.25em;
+		background-color: rgba(255, 255, 255);
+		opacity: 0.4;
+		transition: 400ms;
+		border-radius: 1em;
+		display: flex;
+		flex-direction: column;
+		gap: 0.5em;
+	}
+
+	.ToolBar:hover {
+		opacity: 1;
 	}
 
 	.Content {

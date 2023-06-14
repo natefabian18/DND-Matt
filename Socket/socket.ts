@@ -73,6 +73,8 @@ export const PluginValue = {
 					case MessageTypes.PinMoved: {
 						const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
 
+						console.log(`${data.Changer} Moved Pin ${data.PinData.ID}`);
+
 						if (FindPin == -1) {
 							PinList.push(data.PinData);
 						} else {
