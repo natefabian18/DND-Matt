@@ -116,6 +116,8 @@
 	function DumpMovedPins() {
 		let ModifiedPins = PinList.filter((item) => item.Modified);
 
+		//console.log(ModifiedPins);
+
 		ModifiedPins.forEach((item) => {
 			item.Modified = false;
 

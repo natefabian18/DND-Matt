@@ -21,6 +21,13 @@ export interface PinMoved extends Msg {
 	Changer: string;
 }
 
+export interface MapUpdated extends Msg {
+	MsgType: MessageTypes.MapUpdate;
+	MapURI: string;
+	MapX: number;
+	MapY: number;
+}
+
 export interface BadMessage {
 	MsgType: undefined;
 }

@@ -50,10 +50,15 @@
 	}
 
 	function onMouseUp() {
+		if (fakeLeft == trueLeft && fakeTop == trueTop) {
+			return;
+		}
+
 		Modified = true;
 		moving = false;
 		trueLeft = fakeLeft;
 		trueTop = fakeTop;
+		console.log(`Pin Moved. Belongs to ${name}`);
 	}
 
 	function externalPositionChange() {
