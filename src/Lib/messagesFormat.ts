@@ -24,12 +24,21 @@ export interface PinMoved extends Msg {
 export interface MapUpdated extends Msg {
 	MsgType: MessageTypes.MapUpdate;
 	MapURI: string;
-	MapX: number;
-	MapY: number;
+}
+
+export interface PinDeleted extends Msg {
+	MsgType: MessageTypes.PinDeleted;
+	PinID: number;
 }
 
 export interface BadMessage {
 	MsgType: undefined;
 }
 
-export type UnknownMsg = HelloServer | HelloClient | PinMoved | BadMessage;
+export type UnknownMsg =
+	| MapUpdated
+	| PinDeleted
+	| HelloServer
+	| HelloClient
+	| PinMoved
+	| BadMessage;

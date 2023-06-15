@@ -12,6 +12,15 @@ const PinList: Array<PinData> = [];
 
 const ConnectionList: Array<WebSocket> = [];
 
+function BroadcastMessageToAllPlayers(
+	ConnList: Array<WebSocket>,
+	Message: MessageFormats.UnknownMsg
+) {
+	ConnList.forEach((connection) => {
+		connection.send(JSON.stringify(Message));
+	});
+}
+
 export const PluginValue = {
 	name: 'WebSocketServer',
 	configureServer() {
@@ -59,6 +68,8 @@ export const PluginValue = {
 				//@ts-ignore Ignore MSG format it does parse
 				const data: MessageFormats.UnknownMsg = JSON.parse(message);
 
+				console.log(`Got Message Enum: ${data.MsgType}`);
+
 				switch (data.MsgType) {
 					case MessageTypes.HelloServer:
 						{
@@ -70,27 +81,42 @@ export const PluginValue = {
 							console.warn('Server got hello client message?');
 						}
 						break;
-					case MessageTypes.PinMoved: {
-						const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
+					case MessageTypes.PinMoved:
+						{
+							const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
 
-						console.log(`${data.Changer} Moved Pin ${data.PinData.ID}`);
+							if (FindPin == -1) {
+								PinList.push(data.PinData);
+							} else {
+								PinList[FindPin] = data.PinData;
+							}
 
-						if (FindPin == -1) {
-							PinList.push(data.PinData);
-						} else {
-							PinList[FindPin] = data.PinData;
+							BroadcastMessageToAllPlayers(
+								ConnectionList.filter((connection) => connection != SocketConnection),
+								data
+							);
 						}
+						break;
+					case MessageTypes.PinDeleted:
+						{
+							BroadcastMessageToAllPlayers(
+								ConnectionList.filter((connection) => connection != SocketConnection),
+								data
+							);
+						}
+						break;
 
-						//Pin moved send message to everyone
-						ConnectionList.filter((item) => item != SocketConnection).forEach((Connection) => {
-							const MsgData: Msg = {
-								...data,
-								MsgType: MessageTypes.PinMoved
-							};
-
-							Connection.send(JSON.stringify(MsgData));
-						});
-					}
+					case MessageTypes.MapUpdate:
+						{
+							BroadcastMessageToAllPlayers(
+								ConnectionList.filter((connection) => connection != SocketConnection),
+								data
+							);
+						}
+						break;
+					default:
+						console.log('Got Unknown Message', data);
+						break;
 				}
 			});
 

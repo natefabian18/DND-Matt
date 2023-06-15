@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Pin from '../Lib/Pin.svelte';
 	import type { PinData } from '../Lib/Pin';
-	import type { UnknownMsg } from '../Lib/messagesFormat';
+	import type * as MessageFormats from '../Lib/messagesFormat';
 	import { onMount } from 'svelte';
 	import { MessageTypes } from '../Lib/messageTypes';
 	import { Global } from '../Lib/globals';
@@ -55,44 +55,70 @@
 		ws = new WebSocket(webSocketURL);
 
 		ws.onmessage = function (msg) {
-			let data: UnknownMsg = JSON.parse(msg.data);
+			let data: MessageFormats.UnknownMsg = JSON.parse(msg.data);
 
 			switch (data.MsgType) {
 				case MessageTypes.HelloServer:
-					data;
-					console.warn('Client got hello server message? Panic');
+					{
+						console.warn('Client got hello server message? Panic');
+					}
 					break;
 				case MessageTypes.HelloClient:
-					console.log('Client Got Hello Setting Player ID');
-					playerID = data.playerID;
-					PinList = data.PinDataList;
-					globalPinCounter =
-						data.PinDataList.reduce((previous, current) => {
-							if (current.ID > previous) {
-								return current.ID;
-							} else {
-								return previous;
-							}
-						}, 0) + 1;
-					break;
-				case MessageTypes.PinMoved:
-					let ChangedPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
-
-					if (ChangedPin == -1) {
-						PinList.push(data.PinData);
-						PinList = PinList;
+					{
+						console.log('Client Got Hello Setting Player ID');
+						playerID = data.playerID;
+						PinList = data.PinDataList;
 						globalPinCounter =
-							PinList.reduce((previous, current) => {
+							data.PinDataList.reduce((previous, current) => {
 								if (current.ID > previous) {
 									return current.ID;
 								} else {
 									return previous;
 								}
 							}, 0) + 1;
-					} else {
-						PinList[ChangedPin] = data.PinData;
 					}
+					break;
+				case MessageTypes.PinMoved:
+					{
+						let info: MessageFormats.PinMoved = data;
+						let ChangedPin = PinList.findIndex((item) => item.ID == info.PinData.ID);
 
+						if (ChangedPin == -1) {
+							PinList.push(data.PinData);
+							PinList = PinList;
+							globalPinCounter =
+								PinList.reduce((previous, current) => {
+									if (current.ID > previous) {
+										return current.ID;
+									} else {
+										return previous;
+									}
+								}, 0) + 1;
+						} else {
+							PinList[ChangedPin] = data.PinData;
+						}
+					}
+					break;
+				case MessageTypes.PinDeleted:
+					{
+						let info: MessageFormats.PinDeleted = data;
+						let deletedPin = PinList.findIndex((item) => item.ID == info.PinID);
+
+						if (deletedPin == -1) {
+							return;
+						}
+
+						PinList.splice(deletedPin, 1);
+						PinList = PinList;
+					}
+					break;
+				case MessageTypes.MapUpdate:
+					{
+						let info: MessageFormats.MapUpdated = data;
+						MapURI = info.MapURI;
+
+						MapLoaded();
+					}
 					break;
 				default:
 					console.warn('Unknown Message received', data);
@@ -101,9 +127,12 @@
 		};
 	});
 
-	let mapDimensions = [32, 32];
-	let imgUrl = '/map_32x32.png';
+	let MapURI = '/map_32x32.png';
 	let Map: HTMLImageElement;
+	$: mapDimensions = MapURI?.split('_')[1]
+		?.split('.')[0]
+		?.split('x')
+		?.map((item) => Number(item));
 
 	function MapLoaded() {
 		let MapWidth = Map.width;
@@ -121,7 +150,7 @@
 		ModifiedPins.forEach((item) => {
 			item.Modified = false;
 
-			let msg = {
+			let msg: MessageFormats.PinMoved = {
 				MsgType: MessageTypes.PinMoved,
 				PinData: item,
 				Changer: playerName
@@ -140,6 +169,29 @@
 	function updateGlobal() {
 		Global.set({ DevTools, DMTools });
 	}
+
+	function DeletePin(PinID: number) {
+		let index = PinList.findIndex((item) => item.ID == PinID);
+
+		PinList.splice(index, 1);
+		PinList = PinList;
+
+		const msg: MessageFormats.PinDeleted = {
+			MsgType: MessageTypes.PinDeleted,
+			PinID: PinID
+		};
+
+		ws.send(JSON.stringify(msg));
+	}
+
+	function UpdateMap() {
+		let msg: MessageFormats.MapUpdated = {
+			MapURI,
+			MsgType: MessageTypes.MapUpdate
+		};
+
+		ws.send(JSON.stringify(msg));
+	}
 </script>
 
 <main>
@@ -147,8 +199,8 @@
 		<img
 			draggable="false"
 			class="MapImage"
-			src={imgUrl}
-			alt="Oh fuk where is the map?"
+			src={MapURI}
+			alt="Invalid Map Value"
 			bind:this={Map}
 			on:load={MapLoaded}
 		/>
@@ -176,6 +228,8 @@
 		<button on:click={AddPin}>Add Pin</button>
 
 		{#if DMTools}
+			<input type="text" bind:value={MapURI} />
+			<button on:click={UpdateMap}>Update Map for all</button>
 			<button
 				on:click={() => {
 					DevTools = !DevTools;
@@ -183,21 +237,66 @@
 			>
 			<p>You are player {playerID}</p>
 
+			{#if PinList.length > 0}
+				Pin Management
+				<table>
+					<thead>
+						<tr>
+							<th>Name</th>
+							<th>ID</th>
+							<th>XPos</th>
+							<th>YPos</th>
+							<th>Kill</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each PinList as PinData}
+							<tr>
+								<td>{PinData.Name}</td>
+								<td>{PinData.ID}</td>
+								<td>{PinData.width}</td>
+								<td>{PinData.height}</td>
+								<td
+									><button
+										on:click={() => {
+											DeletePin(PinData.ID);
+										}}>Kill</button
+									></td
+								>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/if}
+
 			{#if DevTools}
-				<dir>
+				<p>PinList</p>
+				<pre>
 					{JSON.stringify(PinList, null, 2)}
-				</dir>
+				</pre>
+				<p>MapInfo</p>
+				<pre>
+					{JSON.stringify(mapDimensions, null, 2)}
+					pinWidth: {pinWidth} pinHeight: {pinHeight}
+				</pre>
 			{/if}
 		{/if}
 	</div>
 </main>
 
 <style>
+	button,
+	input {
+		padding: 0;
+		height: 1.5em;
+		margin: 0;
+	}
+
 	.ToolBar {
 		position: absolute;
 		top: 0.25em;
 		left: 0.25em;
-		background-color: rgba(255, 255, 255);
+		background-color: var(--background-color);
 		opacity: 0.4;
 		transition: 400ms;
 		border-radius: 1em;

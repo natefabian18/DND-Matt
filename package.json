@@ -34,6 +34,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@picocss/pico": "^1.5.10",
 		"@types/ws": "^8.5.5",
 		"ts-node": "^10.9.1",
 		"ws": "^8.13.0"

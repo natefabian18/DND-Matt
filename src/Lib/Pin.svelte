@@ -71,17 +71,20 @@
 	}
 </script>
 
-<section
-	on:mousedown={onMouseDown}
-	style="left: {$left}px; top: {$top}px; width: {width}px; height: {height}px"
-	class="draggable"
->
+<section on:mousedown={onMouseDown} style="left: {$left}px; top: {$top}px;" class="draggable">
 	<div class="Container">
-		<span class="PlayerName">{name}</span>
-		<img draggable="false" src="Pin.png" alt="Hek no pin" />
-		{#if $Global.DevTools}
-			<div>left: {$left} Top: {$top}</div>
-		{/if}
+		<div class="PlayerName">
+			<span>{name}</span>
+			{#if $Global.DevTools}
+				<span>left: {$left} Top: {$top}</span>
+			{/if}
+		</div>
+		<img
+			draggable="false"
+			src="Pin.png"
+			alt="Hek no pin"
+			style="width: {width}px; height: {height}px"
+		/>
 	</div>
 </section>
 
@@ -92,25 +95,32 @@
 		box-sizing: border-box;
 	}
 	.PlayerName {
-		top: 0.7em;
+		top: -100%;
+		left: 50%;
+		transform: translateX(-50%);
 		position: absolute;
-		width: 100%;
 		text-align: center;
 		color: white;
 		background-color: gray;
 		border-radius: 1em;
-		opacity: 0.5;
+		opacity: 0;
 		transition: 400ms;
+		padding: 0.5em;
+		font-size: 0.8em;
+		z-index: -1;
 	}
 
 	section:hover .PlayerName {
 		opacity: 1;
+		z-index: 999;
 	}
 
 	.Container {
 		position: relative;
 		width: 100%;
 		height: 100%;
+		display: flex;
+		flex-direction: column;
 	}
 	.draggable {
 		user-select: none;
