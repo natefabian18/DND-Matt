@@ -1,3 +1,3 @@
 import { writable } from 'svelte/store';
 
-export const playerIDStore = writable();
+export const playerIDStore = writable(-1);

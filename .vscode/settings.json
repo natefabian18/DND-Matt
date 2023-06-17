@@ -1,4 +1,9 @@
 {
     "editor.formatOnSave": true,
-    "prettier.useTabs": true
+    "prettier.useTabs": true,
+    "vscode-color-picker.languages": [
+        "python",
+        "javascript",
+        "typescript"
+    ]
 }

@@ -1,6 +1,15 @@
-import type { MessageTypes } from './messageTypes';
 import type { PinData } from './Pin';
 import type { IAlert } from '../Lib/Alert';
+
+export enum MessageTypes {
+	HelloServer = 1,
+	HelloClient = 2,
+	PinMoved = 3,
+	MapUpdate = 4,
+	PinDeleted = 5,
+	PinUpdated = 6,
+	Alert = 7
+}
 
 export interface Msg {
 	MsgType: MessageTypes;
@@ -18,7 +27,7 @@ export interface HelloClient extends Msg {
 }
 
 export interface PinMoved extends Msg {
-	//It may be more performant to only send the pin movements here and use pinUpdate for anything else but the datastructure isnt very large yet so its fine
+	//It may be more performant to only send the pin movements here and use pinUpdate for anything else but the data structure isnt very large yet so its fine
 	MsgType: MessageTypes.PinMoved;
 	PinData: PinData;
 	Changer: string;

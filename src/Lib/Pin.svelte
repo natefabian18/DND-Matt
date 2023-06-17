@@ -37,16 +37,20 @@
 
 	export let width = 100;
 	export let height = 100;
-
 	export let PinOwner: number;
-
 	let moving = false;
 
+	let isDM = false;
+	Global.DMTools.subscribe((DM) => {
+		isDM = DM;
+	});
+
+	let devTools = false;
+	Global.DevTools.subscribe((IsDev) => {
+		devTools = IsDev;
+	});
+
 	function onMouseDown() {
-		if (PinOwner != $playerIDStore && !$Global.DMTools) {
-			console.log('You cannot move a pin you dont own');
-			return;
-		}
 		moving = true;
 	}
 
@@ -117,13 +121,15 @@
 	on:mousedown={onMouseDown}
 	on:touchstart={onDragStart}
 	on:touchmove={onDragMove}
-	style="left: {$left}px; top: {$top}px;"
+	style="left: {$left}px; top: {$top}px;
+	pointer-events: {PinOwner != $playerIDStore && !isDM ? 'none' : 'unset'};
+	"
 	class="draggable"
 >
 	<div class="Container">
 		<div class="PlayerName">
 			<span>{name}</span>
-			{#if $Global.DevTools}
+			{#if devTools}
 				<span>left: {$left} Top: {$top}</span>
 			{/if}
 		</div>

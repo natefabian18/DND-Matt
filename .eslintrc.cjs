@@ -9,7 +9,8 @@ module.exports = {
 	parser: '@typescript-eslint/parser',
 	plugins: ['@typescript-eslint'],
 	rules: {
-		'ban-ts-comment': [0]
+		'ban-ts-comment': [0],
+		'no-explicit-any': [0]
 	},
 	parserOptions: {
 		sourceType: 'module',

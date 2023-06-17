@@ -2,14 +2,15 @@ import { writable } from 'svelte/store';
 
 export interface IAlert {
 	Color?: string;
+	TextColor?: string;
 	Message: string;
 	duration: number;
 	BroadCast: boolean;
 }
 
 const welcomeAlert: IAlert = {
-	duration: 2000,
-	Message: 'Welcome to Matt',
+	duration: 1,
+	Message: '',
 	BroadCast: false
 };
 

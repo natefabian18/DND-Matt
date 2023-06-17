@@ -1,14 +1,12 @@
 import WebSocket, { WebSocketServer } from 'ws';
-
-import { MessageTypes } from '../src/Lib/messageTypes';
-import type * as MessageFormats from '../src/Lib/messagesFormat';
+import * as MessageFormats from '../src/Lib/MessageTypes';
 import type { PinData } from '../src/Lib/Pin';
 
 const port = 10232;
 let SocketServer: WebSocketServer;
 
 const PinList: Array<PinData> = [];
-let ActiveMap: string = '/map_32x32.png';
+let ActiveMap = '/map_32x32.png';
 const ConnectionList: Array<WebSocket> = [];
 
 function BroadcastMessageToAllPlayers(
@@ -57,7 +55,7 @@ export const PluginValue = {
 			ConnectionList.push(SocketConnection);
 
 			const helloClientData: MessageFormats.HelloClient = {
-				MsgType: MessageTypes.HelloClient,
+				MsgType: MessageFormats.MessageTypes.HelloClient,
 				playerID: globalPlayerCounter++,
 				PinDataList: PinList,
 				ActiveMap: ActiveMap
@@ -71,17 +69,17 @@ export const PluginValue = {
 				console.log(`Got Message Enum: ${data.MsgType}`);
 
 				switch (data.MsgType) {
-					case MessageTypes.HelloServer:
+					case MessageFormats.MessageTypes.HelloServer:
 						{
 							console.log('Client Connected');
 						}
 						break;
-					case MessageTypes.HelloClient:
+					case MessageFormats.MessageTypes.HelloClient:
 						{
 							console.warn('Server got hello client message?');
 						}
 						break;
-					case MessageTypes.PinMoved:
+					case MessageFormats.MessageTypes.PinMoved:
 						{
 							const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
 
@@ -99,7 +97,7 @@ export const PluginValue = {
 							);
 						}
 						break;
-					case MessageTypes.PinDeleted:
+					case MessageFormats.MessageTypes.PinDeleted:
 						{
 							BroadcastMessageToAllPlayers(
 								ConnectionList.filter((connection) => connection != SocketConnection),
@@ -108,7 +106,7 @@ export const PluginValue = {
 						}
 						break;
 
-					case MessageTypes.MapUpdate:
+					case MessageFormats.MessageTypes.MapUpdate:
 						{
 							ActiveMap = data.MapURI;
 
@@ -119,7 +117,7 @@ export const PluginValue = {
 						}
 						break;
 
-					case MessageTypes.PinUpdated:
+					case MessageFormats.MessageTypes.PinUpdated:
 						{
 							const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
 
@@ -135,7 +133,7 @@ export const PluginValue = {
 							);
 						}
 						break;
-					case MessageTypes.Alert:
+					case MessageFormats.MessageTypes.Alert:
 						{
 							data.AlertData.BroadCast = false;
 

@@ -1,32 +1,59 @@
 <script lang="ts">
 	import Pin from '../Lib/Pin.svelte';
 	import type { PinData } from '../Lib/Pin';
-	import type * as MessageFormats from '../Lib/messagesFormat';
-	import { onMount } from 'svelte';
-	import { MessageTypes } from '../Lib/messageTypes';
-	import { Global } from '../Lib/globals';
-	import { playerIDStore } from '../Lib/PlayerID';
 	import AlertManager from '../Lib/AlertManager.svelte';
-	import { Alert } from '../Lib/Alert';
+	import { Store } from '../Lib/StoreCollection';
+	import * as MessageFormats from '../Lib/MessageTypes';
+	import { Global } from '../Lib/globals';
 
 	let DMTools = false;
 	let DevTools = false;
-	Global.subscribe((Global) => {
-		DMTools = Global.DMTools;
-		DevTools = Global.DevTools;
-	});
-
-	$: DMTools, DevTools, updateGlobal();
-
 	let pinWidth = 100;
 	let pinHeight = 100;
-
 	let ShowToolbar = true;
-
 	let playerName = '';
-
 	let globalPinCounter = 1;
+	let PinList: Array<PinData> = [];
+	let playerID = -1;
+	let DefaultPinHue = 0;
+	let MapURI = '';
+	let Map: HTMLImageElement;
+	let ws: WebSocket;
 
+	//#region Subscribe events
+	Store.Global.DMTools.subscribe((value) => {
+		DMTools = value;
+	});
+	Store.Global.DevTools.subscribe((value) => {
+		DevTools = value;
+	});
+	Store.Global.WebSocketConnection.subscribe((Connection) => {
+		ws = Connection;
+	});
+	Store.Global.MapURI.subscribe((URI) => {
+		MapURI = URI;
+	});
+	Store.Global.PinList.subscribe((List) => {
+		PinList = List;
+	});
+	Store.Global.PinCounter.subscribe((Total) => {
+		globalPinCounter = Total;
+	});
+	Store.playerIDStore.subscribe((ID) => {
+		playerID = ID;
+	});
+	//#endregion
+
+	//#region Dynamic Assignments
+	$: PinList, DumpMovedPins();
+	$: mapDimensions = MapURI?.split('_')[1]
+		?.split('.')[0]
+		?.split('x')
+		?.map((item) => Number(item));
+	$: MapURI, MapLoaded();
+	//#endregion
+
+	//#region State Functions
 	function PinFactory(
 		name: string = 'DefaultName',
 		width: number,
@@ -51,131 +78,16 @@
 		return pin;
 	}
 
-	let PinList: Array<PinData> = [];
-
-	$: PinList, DumpMovedPins();
-
-	$: playerID = $playerIDStore;
-
-	let DefaultPinHue = 0;
-
-	let ws: WebSocket;
-	onMount(() => {
-		let webSocketURL = `ws://${window.location.hostname}:10232`;
-		ws = new WebSocket(webSocketURL);
-
-		debugger;
-
-		let tempGlobal = $Global;
-		tempGlobal.WebSocketConnection = ws;
-		Global.set(tempGlobal);
-
-		ws.onmessage = function (msg) {
-			let data: MessageFormats.UnknownMsg = JSON.parse(msg.data);
-
-			switch (data.MsgType) {
-				case MessageTypes.HelloServer:
-					{
-						console.warn('Client got hello server message? Panic');
-					}
-					break;
-				case MessageTypes.HelloClient:
-					{
-						console.log('Client Got Hello Setting Player ID');
-						playerIDStore.set(data.playerID);
-						PinList = data.PinDataList;
-						DefaultPinHue = (data.playerID - 1) * 40;
-						MapURI = data.ActiveMap;
-						globalPinCounter =
-							data.PinDataList.reduce((previous, current) => {
-								if (current.ID > previous) {
-									return current.ID;
-								} else {
-									return previous;
-								}
-							}, 0) + 1;
-					}
-					break;
-				case MessageTypes.PinMoved:
-					{
-						let info: MessageFormats.PinMoved = data;
-						let ChangedPin = PinList.findIndex((item) => item.ID == info.PinData.ID);
-
-						if (ChangedPin == -1) {
-							PinList.push(data.PinData);
-							PinList = PinList;
-							globalPinCounter =
-								PinList.reduce((previous, current) => {
-									if (current.ID > previous) {
-										return current.ID;
-									} else {
-										return previous;
-									}
-								}, 0) + 1;
-						} else {
-							PinList[ChangedPin] = data.PinData;
-						}
-					}
-					break;
-				case MessageTypes.PinDeleted:
-					{
-						let info: MessageFormats.PinDeleted = data;
-						let deletedPin = PinList.findIndex((item) => item.ID == info.PinID);
-
-						if (deletedPin == -1) {
-							return;
-						}
-
-						PinList.splice(deletedPin, 1);
-						PinList = PinList;
-					}
-					break;
-				case MessageTypes.PinUpdated:
-					{
-						let info: MessageFormats.UpdatePinData = data;
-						let ChangedPin = PinList.findIndex((item) => item.ID == info.PinData.ID);
-
-						if (ChangedPin == -1) {
-							return;
-						}
-
-						PinList[ChangedPin] = data.PinData;
-						PinList = PinList;
-					}
-					break;
-				case MessageTypes.MapUpdate:
-					{
-						let info: MessageFormats.MapUpdated = data;
-						MapURI = info.MapURI;
-
-						MapLoaded();
-					}
-					break;
-				case MessageTypes.Alert:
-					{
-						Alert.set(data.AlertData);
-					}
-					break;
-				default:
-					console.warn('Unknown Message received', data);
-					break;
-			}
-		};
-	});
-
-	let MapURI = '/map_32x32.png';
-	let Map: HTMLImageElement;
-	$: mapDimensions = MapURI?.split('_')[1]
-		?.split('.')[0]
-		?.split('x')
-		?.map((item) => Number(item));
-
 	function MapLoaded() {
-		let MapWidth = Map.width;
-		let MapHeight = Map.height;
+		try {
+			let MapWidth = Map.width;
+			let MapHeight = Map.height;
 
-		pinWidth = MapWidth / mapDimensions[0];
-		pinHeight = MapHeight / mapDimensions[1];
+			pinWidth = MapWidth / mapDimensions[0];
+			pinHeight = MapHeight / mapDimensions[1];
+		} catch (e) {
+			setTimeout(MapLoaded, 500);
+		}
 	}
 
 	function DumpMovedPins() {
@@ -185,7 +97,7 @@
 			item.Modified = false;
 
 			let msg: MessageFormats.PinMoved = {
-				MsgType: MessageTypes.PinMoved,
+				MsgType: MessageFormats.MessageTypes.PinMoved,
 				PinData: item,
 				Changer: playerName
 			};
@@ -200,13 +112,19 @@
 		} else {
 			PinList.push(PinFactory(playerName, 300, 300, DefaultPinHue));
 		}
+
+		Global.PinCounter.set(
+			PinList.reduce((previous, PinData) => {
+				if (PinData.ID > previous) {
+					return PinData.ID;
+				} else {
+					return previous;
+				}
+			}, -1) + 1
+		);
+
 		PinList = PinList;
 		DumpMovedPins();
-	}
-
-	function updateGlobal() {
-		let LocalGlobal = $Global; //TODO: Not tired intoxicated me fix this shitty code
-		Global.set({ DevTools, DMTools });
 	}
 
 	function DeletePin(PinID: number) {
@@ -216,7 +134,7 @@
 		PinList = PinList;
 
 		const msg: MessageFormats.PinDeleted = {
-			MsgType: MessageTypes.PinDeleted,
+			MsgType: MessageFormats.MessageTypes.PinDeleted,
 			PinID: PinID
 		};
 
@@ -226,7 +144,7 @@
 	function UpdateMap() {
 		let msg: MessageFormats.MapUpdated = {
 			MapURI,
-			MsgType: MessageTypes.MapUpdate
+			MsgType: MessageFormats.MessageTypes.MapUpdate
 		};
 
 		ws.send(JSON.stringify(msg));
@@ -234,7 +152,7 @@
 
 	function UpdatePin(PinData: PinData) {
 		let msg: MessageFormats.UpdatePinData = {
-			MsgType: MessageTypes.PinUpdated,
+			MsgType: MessageFormats.MessageTypes.PinUpdated,
 			PinData
 		};
 
@@ -242,23 +160,23 @@
 	}
 
 	function DEBUGPing() {
-		Alert.set({
+		Store.Alert.set({
+			Color: 'green',
+			TextColor: 'white',
 			duration: 1000,
 			Message: 'PING!',
 			BroadCast: true
 		});
 	}
+	//#endregion
 </script>
 
 <main>
-	<div class="AlertManager">
-		<AlertManager />
-	</div>
 	<div class="Content">
 		<img
 			draggable="false"
 			class="MapImage"
-			src={MapURI}
+			src={'/Maps' + MapURI}
 			alt="Invalid Map Value"
 			bind:this={Map}
 			on:load={MapLoaded}
@@ -287,7 +205,7 @@
 		{#if ShowToolbar}
 			<button
 				on:click={() => {
-					DMTools = !DMTools;
+					Global.DMTools.set(!DMTools);
 				}}>Toggle DM Tools</button
 			>
 			<p>You are player {playerID}</p>
@@ -298,7 +216,7 @@
 				<button on:click={UpdateMap}>Update Map for all</button>
 				<button
 					on:click={() => {
-						DevTools = !DevTools;
+						Global.DevTools.set(!DevTools);
 					}}>Toggle Dev Tools</button
 				>
 
@@ -333,6 +251,7 @@
 										<input
 											type="number"
 											name="PinOwner"
+											class="PinOwner"
 											bind:value={PinData.OwnerID}
 											on:blur={() => {
 												UpdatePin(PinData);
@@ -406,22 +325,22 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5em;
+		padding: 0.5em;
 	}
 
+	.PinOwner,
 	.HueShift {
 		width: 4ch;
+		appearance: textfield;
+		-moz-appearance: textfield;
 	}
-
 	/* Chrome, Safari, Edge, Opera */
+	.PinOwner,
 	.HueShift::-webkit-outer-spin-button,
+	.PinOwner,
 	.HueShift::-webkit-inner-spin-button {
 		-webkit-appearance: none;
 		margin: 0;
-	}
-
-	/* Firefox */
-	.HueShift[type='number'] {
-		-moz-appearance: textfield;
 	}
 
 	.ToolBar:hover {
@@ -432,13 +351,5 @@
 		position: relative;
 		width: max-content;
 		height: max-content;
-	}
-
-	.AlertManager {
-		top: 0;
-		right: 0;
-		bottom: 0;
-		position: absolute;
-		z-index: 10000;
 	}
 </style>
