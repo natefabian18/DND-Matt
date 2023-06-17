@@ -84,6 +84,8 @@ export const PluginValue = {
 						{
 							const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
 
+							console.log(data.PinData);
+
 							if (FindPin == -1) {
 								PinList.push(data.PinData);
 							} else {

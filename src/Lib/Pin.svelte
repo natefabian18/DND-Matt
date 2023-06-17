@@ -11,6 +11,8 @@
 	export let trueTop = 100;
 	export let name: string;
 
+	console.log('Pin Created');
+
 	export let hue: number = 0;
 
 	const duration = 400;
@@ -38,26 +40,61 @@
 	let moving = false;
 
 	function onMouseDown() {
+		console.log('On Mouse Down');
 		moving = true;
+	}
+
+	function onDragStart(e: TouchEvent) {
+		moving = true;
+		e.preventDefault();
 	}
 
 	function onMouseMove(e: MouseEvent) {
 		if (moving) {
-			fakeLeft += e.movementX;
-			fakeTop += e.movementY;
+			console.log('On Mouse move while pin move');
+			if (e.movementX == undefined) {
+				fakeLeft = e.pageX;
+				fakeTop = e.pageY;
+
+				left.set(fakeLeft, { duration: 5000 });
+				top.set(fakeTop, { duration: 5000 });
+
+				return;
+			} else {
+				fakeLeft += e.movementX;
+				fakeTop += e.movementY;
+			}
 
 			left.set(fakeLeft, { duration: 1 });
 			top.set(fakeTop, { duration: 1 });
 		}
 	}
 
+	let dragEndTimeout: any;
+	function onDragMove(e: TouchEvent) {
+		if (moving) {
+			left.set(e.touches[0].pageX, { duration: 1 });
+			top.set(e.touches[0].pageY, { duration: 1 });
+			if (dragEndTimeout != undefined) {
+				clearTimeout(dragEndTimeout);
+			}
+			dragEndTimeout = setTimeout(() => {
+				trueLeft = e.touches[0].pageX;
+				trueTop = e.touches[0].pageY;
+				Modified = true;
+				moving = false;
+			}, 1000);
+		}
+	}
+
 	function onMouseUp() {
+		moving = false;
 		if (fakeLeft == trueLeft && fakeTop == trueTop) {
 			return;
 		}
+		console.log('on Mouse up');
 
 		Modified = true;
-		moving = false;
 		trueLeft = fakeLeft;
 		trueTop = fakeTop;
 	}
@@ -72,7 +109,13 @@
 	}
 </script>
 
-<section on:mousedown={onMouseDown} style="left: {$left}px; top: {$top}px;" class="draggable">
+<section
+	on:mousedown={onMouseDown}
+	on:touchstart={onDragStart}
+	on:touchmove={onDragMove}
+	style="left: {$left}px; top: {$top}px;"
+	class="draggable"
+>
 	<div class="Container">
 		<div class="PlayerName">
 			<span>{name}</span>
