@@ -96,6 +96,11 @@ export default function HandleMessage(msg: MessageEvent<any>) {
 				Store.Alert.set(data.AlertData);
 			}
 			break;
+		case MessageFormats.MessageTypes.TapeMeasureMoved:
+			{
+				Store.Global.TapeMeasureValues.set(data.TapeMeasurePositions);
+			}
+			break;
 		default:
 			console.warn('Unknown Message received', data);
 			break;

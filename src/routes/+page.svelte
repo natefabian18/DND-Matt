@@ -1,10 +1,10 @@
 <script lang="ts">
 	import Pin from '../Lib/Pin.svelte';
 	import type { PinData } from '../Lib/Pin';
-	import AlertManager from '../Lib/AlertManager.svelte';
 	import { Store } from '../Lib/StoreCollection';
 	import * as MessageFormats from '../Lib/MessageTypes';
 	import { Global } from '../Lib/globals';
+	import TapeMeasure from '../Lib/TapeMeasure.svelte';
 
 	let DMTools = false;
 	let DevTools = false;
@@ -19,6 +19,7 @@
 	let MapURI = '';
 	let Map: HTMLImageElement;
 	let ws: WebSocket;
+	let showTapeMeasure = false;
 
 	//#region Subscribe events
 	Store.Global.DMTools.subscribe((value) => {
@@ -172,6 +173,9 @@
 </script>
 
 <main>
+	<div class="FloatAbove" style="pointer-events: {showTapeMeasure ? 'all' : 'none'};">
+		<TapeMeasure UnitWidth={pinHeight} bind:Enabled={showTapeMeasure} UnitMult={5} />
+	</div>
 	<div class="Content">
 		<img
 			draggable="false"
@@ -201,6 +205,12 @@
 			on:click={() => {
 				ShowToolbar = !ShowToolbar;
 			}}>{ShowToolbar ? 'Hide' : 'Show'} Toolbar</button
+		>
+
+		<button
+			on:click={() => {
+				showTapeMeasure = !showTapeMeasure;
+			}}>{showTapeMeasure ? 'Hide' : 'Show'} TapeMeasure</button
 		>
 		{#if ShowToolbar}
 			<button
@@ -307,6 +317,11 @@
 </main>
 
 <style>
+	.FloatAbove {
+		position: absolute;
+		inset: 0;
+		z-index: 5000;
+	}
 	button,
 	input {
 		padding: 0;
@@ -326,6 +341,7 @@
 		flex-direction: column;
 		gap: 0.5em;
 		padding: 0.5em;
+		z-index: 10000;
 	}
 
 	.PinOwner,

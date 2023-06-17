@@ -143,6 +143,14 @@ export const PluginValue = {
 							);
 						}
 						break;
+					case MessageFormats.MessageTypes.TapeMeasureMoved:
+						{
+							BroadcastMessageToAllPlayers(
+								ConnectionList.filter((connection) => connection != SocketConnection),
+								data
+							);
+						}
+						break;
 					default:
 						console.log('Got Unknown Message', data);
 						break;

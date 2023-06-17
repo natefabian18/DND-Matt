@@ -8,7 +8,8 @@ export enum MessageTypes {
 	MapUpdate = 4,
 	PinDeleted = 5,
 	PinUpdated = 6,
-	Alert = 7
+	Alert = 7,
+	TapeMeasureMoved = 8
 }
 
 export interface Msg {
@@ -52,6 +53,16 @@ export interface AlertBroadCast extends Msg {
 	AlertData: IAlert;
 }
 
+export interface TapeMeasureMoved extends Msg {
+	MsgType: MessageTypes.TapeMeasureMoved;
+	TapeMeasurePositions: {
+		StartX: number;
+		StartY: number;
+		EndX: number;
+		EndY: number;
+	};
+}
+
 export interface BadMessage {
 	MsgType: undefined;
 }
@@ -64,4 +75,5 @@ export type UnknownMsg =
 	| PinMoved
 	| BadMessage
 	| UpdatePinData
-	| AlertBroadCast;
+	| AlertBroadCast
+	| TapeMeasureMoved;
