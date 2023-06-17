@@ -2,7 +2,6 @@ import WebSocket, { WebSocketServer } from 'ws';
 
 import { MessageTypes } from '../src/Lib/messageTypes';
 import type * as MessageFormats from '../src/Lib/messagesFormat';
-import type { Msg } from '../src/Lib/messagesFormat';
 import type { PinData } from '../src/Lib/Pin';
 
 const port = 10232;
@@ -108,6 +107,23 @@ export const PluginValue = {
 
 					case MessageTypes.MapUpdate:
 						{
+							BroadcastMessageToAllPlayers(
+								ConnectionList.filter((connection) => connection != SocketConnection),
+								data
+							);
+						}
+						break;
+
+					case MessageTypes.PinUpdated:
+						{
+							const FindPin = PinList.findIndex((item) => item.ID == data.PinData.ID);
+
+							if (FindPin == -1) {
+								PinList.push(data.PinData);
+							} else {
+								PinList[FindPin] = data.PinData;
+							}
+
 							BroadcastMessageToAllPlayers(
 								ConnectionList.filter((connection) => connection != SocketConnection),
 								data

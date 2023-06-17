@@ -5,4 +5,5 @@ export interface PinData {
 	height: number;
 	DumpPin: Function;
 	Modified: boolean;
+	HueShift: number;
 }

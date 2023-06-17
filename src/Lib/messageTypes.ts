@@ -3,5 +3,6 @@ export enum MessageTypes {
 	HelloClient = 2,
 	PinMoved = 3,
 	MapUpdate = 4,
-	PinDeleted = 5
+	PinDeleted = 5,
+	PinUpdated = 6
 }

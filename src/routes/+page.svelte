@@ -18,7 +18,9 @@
 	let pinWidth = 100;
 	let pinHeight = 100;
 
-	let playerName = 'Unknown Player';
+	let ShowToolbar = true;
+
+	let playerName = '';
 
 	let globalPinCounter = 1;
 
@@ -26,9 +28,10 @@
 		name: string = 'DefaultName',
 		width: number,
 		height: number,
+		Hue: number,
 		ID = globalPinCounter++
 	) {
-		let pin = {
+		let pin: PinData = {
 			ID,
 			Name: name,
 			width: width,
@@ -36,7 +39,8 @@
 			DumpPin: function () {
 				return this;
 			},
-			Modified: true
+			Modified: true,
+			HueShift: Hue
 		};
 
 		return pin;
@@ -47,6 +51,8 @@
 	$: PinList, DumpMovedPins();
 
 	let playerID = -1;
+
+	let DefaultPinHue = 0;
 
 	let ws: WebSocket;
 	onMount(() => {
@@ -68,6 +74,7 @@
 						console.log('Client Got Hello Setting Player ID');
 						playerID = data.playerID;
 						PinList = data.PinDataList;
+						DefaultPinHue = (playerID - 1) * 40;
 						globalPinCounter =
 							data.PinDataList.reduce((previous, current) => {
 								if (current.ID > previous) {
@@ -112,6 +119,19 @@
 						PinList = PinList;
 					}
 					break;
+				case MessageTypes.PinUpdated:
+					{
+						let info: MessageFormats.UpdatePinData = data;
+						let ChangedPin = PinList.findIndex((item) => item.ID == info.PinData.ID);
+
+						if (ChangedPin == -1) {
+							return;
+						}
+
+						PinList[ChangedPin] = data.PinData;
+						PinList = PinList;
+					}
+					break;
 				case MessageTypes.MapUpdate:
 					{
 						let info: MessageFormats.MapUpdated = data;
@@ -145,8 +165,6 @@
 	function DumpMovedPins() {
 		let ModifiedPins = PinList.filter((item) => item.Modified);
 
-		//console.log(ModifiedPins);
-
 		ModifiedPins.forEach((item) => {
 			item.Modified = false;
 
@@ -161,7 +179,11 @@
 	}
 
 	function AddPin() {
-		PinList.push(PinFactory(playerName, 300, 300));
+		if (DMTools) {
+			PinList.push(PinFactory('DM', 300, 300, DefaultPinHue));
+		} else {
+			PinList.push(PinFactory(playerName, 300, 300, DefaultPinHue));
+		}
 		PinList = PinList;
 		DumpMovedPins();
 	}
@@ -192,6 +214,15 @@
 
 		ws.send(JSON.stringify(msg));
 	}
+
+	function UpdatePin(PinData: PinData) {
+		let msg: MessageFormats.UpdatePinData = {
+			MsgType: MessageTypes.PinUpdated,
+			PinData
+		};
+
+		ws.send(JSON.stringify(msg));
+	}
 </script>
 
 <main>
@@ -211,6 +242,7 @@
 				bind:trueTop={PinData.height}
 				bind:Modified={PinData.Modified}
 				bind:name={PinData.Name}
+				bind:hue={PinData.HueShift}
 				width={pinWidth}
 				height={pinHeight}
 			/>
@@ -220,65 +252,95 @@
 	<div class="ToolBar">
 		<button
 			on:click={() => {
-				DMTools = !DMTools;
-			}}>Toggle DM Tools</button
+				ShowToolbar = !ShowToolbar;
+			}}>{ShowToolbar ? 'Hide' : 'Show'} Toolbar</button
 		>
-
-		<input type="text" bind:value={playerName} />
-		<button on:click={AddPin}>Add Pin</button>
-
-		{#if DMTools}
-			<input type="text" bind:value={MapURI} />
-			<button on:click={UpdateMap}>Update Map for all</button>
+		{#if ShowToolbar}
 			<button
 				on:click={() => {
-					DevTools = !DevTools;
-				}}>Toggle Dev Tools</button
+					DMTools = !DMTools;
+				}}>Toggle DM Tools</button
 			>
-			<p>You are player {playerID}</p>
 
-			{#if PinList.length > 0}
-				Pin Management
-				<table>
-					<thead>
-						<tr>
-							<th>Name</th>
-							<th>ID</th>
-							<th>XPos</th>
-							<th>YPos</th>
-							<th>Kill</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each PinList as PinData}
+			{#if DMTools}
+				<button on:click={AddPin}>Add Pin</button>
+				<input type="text" bind:value={MapURI} />
+				<button on:click={UpdateMap}>Update Map for all</button>
+				<button
+					on:click={() => {
+						DevTools = !DevTools;
+					}}>Toggle Dev Tools</button
+				>
+				<p>You are player {playerID}</p>
+
+				{#if PinList.length > 0}
+					Pin Management
+					<table>
+						<thead>
 							<tr>
-								<td>{PinData.Name}</td>
-								<td>{PinData.ID}</td>
-								<td>{PinData.width}</td>
-								<td>{PinData.height}</td>
-								<td
-									><button
-										on:click={() => {
-											DeletePin(PinData.ID);
-										}}>Kill</button
-									></td
-								>
+								<th>Name</th>
+								<th>ID</th>
+								<th>XPos</th>
+								<th>YPos</th>
+								<th>Hue</th>
+								<th>Kill</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			{/if}
+						</thead>
+						<tbody>
+							{#each PinList as PinData}
+								<tr>
+									<td>
+										<input
+											type="text"
+											name="PinName"
+											bind:value={PinData.Name}
+											on:blur={() => {
+												UpdatePin(PinData);
+											}}
+										/>
+									</td>
+									<td>{PinData.ID}</td>
+									<td>{PinData.width}</td>
+									<td>{PinData.height}</td>
+									<td
+										><input
+											class="HueShift"
+											type="number"
+											bind:value={PinData.HueShift}
+											on:blur={() => {
+												UpdatePin(PinData);
+											}}
+										/></td
+									>
+									<td
+										><button
+											on:click={() => {
+												DeletePin(PinData.ID);
+											}}>Kill</button
+										></td
+									>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				{/if}
 
-			{#if DevTools}
-				<p>PinList</p>
-				<pre>
+				{#if DevTools}
+					<p>PinList</p>
+					<pre>
 					{JSON.stringify(PinList, null, 2)}
 				</pre>
-				<p>MapInfo</p>
-				<pre>
+					<p>MapInfo</p>
+					<pre>
 					{JSON.stringify(mapDimensions, null, 2)}
 					pinWidth: {pinWidth} pinHeight: {pinHeight}
 				</pre>
+				{/if}
+			{:else}
+				<input type="text" bind:value={playerName} placeholder="Please Enter Player Name" />
+				<label for="DefaultPlayerHue">Hue</label>
+				<input type="number" name="DefaultPlayerHue" bind:value={DefaultPinHue} />
+				<button on:click={AddPin}>Add Pin</button>
 			{/if}
 		{/if}
 	</div>
@@ -303,6 +365,22 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0.5em;
+	}
+
+	.HueShift {
+		width: 4ch;
+	}
+
+	/* Chrome, Safari, Edge, Opera */
+	.HueShift::-webkit-outer-spin-button,
+	.HueShift::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	/* Firefox */
+	.HueShift[type='number'] {
+		-moz-appearance: textfield;
 	}
 
 	.ToolBar:hover {

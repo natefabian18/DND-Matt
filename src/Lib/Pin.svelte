@@ -11,6 +11,8 @@
 	export let trueTop = 100;
 	export let name: string;
 
+	export let hue: number = 0;
+
 	const duration = 400;
 
 	//The transitioned values used for animation and actual positioning
@@ -58,7 +60,6 @@
 		moving = false;
 		trueLeft = fakeLeft;
 		trueTop = fakeTop;
-		console.log(`Pin Moved. Belongs to ${name}`);
 	}
 
 	function externalPositionChange() {
@@ -83,7 +84,7 @@
 			draggable="false"
 			src="Pin.png"
 			alt="Hek no pin"
-			style="width: {width}px; height: {height}px"
+			style="width: {width}px; height: {height}px; filter: hue-rotate({hue}deg)"
 		/>
 	</div>
 </section>
