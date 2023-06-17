@@ -2,6 +2,7 @@
 	import { tweened } from 'svelte/motion';
 	import { cubicInOut } from 'svelte/easing';
 	import { Global } from '../Lib/globals';
+	import { playerIDStore } from '../Lib/PlayerID';
 
 	//Base Credit to https://svelte.dev/repl/7d674cc78a3a44beb2c5a9381c7eb1a9?version=3.29.7
 	export let Modified = false;
@@ -37,10 +38,15 @@
 	export let width = 100;
 	export let height = 100;
 
+	export let PinOwner: number;
+
 	let moving = false;
 
 	function onMouseDown() {
-		console.log('On Mouse Down');
+		if (PinOwner != $playerIDStore && !$Global.DMTools) {
+			console.log('You cannot move a pin you dont own');
+			return;
+		}
 		moving = true;
 	}
 
@@ -51,7 +57,6 @@
 
 	function onMouseMove(e: MouseEvent) {
 		if (moving) {
-			console.log('On Mouse move while pin move');
 			if (e.movementX == undefined) {
 				fakeLeft = e.pageX;
 				fakeTop = e.pageY;
@@ -92,7 +97,6 @@
 		if (fakeLeft == trueLeft && fakeTop == trueTop) {
 			return;
 		}
-		console.log('on Mouse up');
 
 		Modified = true;
 		trueLeft = fakeLeft;

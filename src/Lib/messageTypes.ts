@@ -4,5 +4,6 @@ export enum MessageTypes {
 	PinMoved = 3,
 	MapUpdate = 4,
 	PinDeleted = 5,
-	PinUpdated = 6
+	PinUpdated = 6,
+	Alert = 7
 }

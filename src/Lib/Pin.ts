@@ -1,4 +1,5 @@
 export interface PinData {
+	OwnerID: number;
 	ID: number;
 	Name: string;
 	width: number;

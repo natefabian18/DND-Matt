@@ -8,7 +8,7 @@ const port = 10232;
 let SocketServer: WebSocketServer;
 
 const PinList: Array<PinData> = [];
-
+let ActiveMap: string = '/map_32x32.png';
 const ConnectionList: Array<WebSocket> = [];
 
 function BroadcastMessageToAllPlayers(
@@ -59,7 +59,8 @@ export const PluginValue = {
 			const helloClientData: MessageFormats.HelloClient = {
 				MsgType: MessageTypes.HelloClient,
 				playerID: globalPlayerCounter++,
-				PinDataList: PinList
+				PinDataList: PinList,
+				ActiveMap: ActiveMap
 			};
 			SocketConnection.send(JSON.stringify(helloClientData));
 
@@ -109,6 +110,8 @@ export const PluginValue = {
 
 					case MessageTypes.MapUpdate:
 						{
+							ActiveMap = data.MapURI;
+
 							BroadcastMessageToAllPlayers(
 								ConnectionList.filter((connection) => connection != SocketConnection),
 								data
@@ -125,6 +128,16 @@ export const PluginValue = {
 							} else {
 								PinList[FindPin] = data.PinData;
 							}
+
+							BroadcastMessageToAllPlayers(
+								ConnectionList.filter((connection) => connection != SocketConnection),
+								data
+							);
+						}
+						break;
+					case MessageTypes.Alert:
+						{
+							data.AlertData.BroadCast = false;
 
 							BroadcastMessageToAllPlayers(
 								ConnectionList.filter((connection) => connection != SocketConnection),

@@ -1,5 +1,6 @@
 import type { MessageTypes } from './messageTypes';
 import type { PinData } from './Pin';
+import type { IAlert } from '../Lib/Alert';
 
 export interface Msg {
 	MsgType: MessageTypes;
@@ -13,6 +14,7 @@ export interface HelloClient extends Msg {
 	MsgType: MessageTypes.HelloClient;
 	playerID: number;
 	PinDataList: Array<PinData>;
+	ActiveMap: string;
 }
 
 export interface PinMoved extends Msg {
@@ -36,6 +38,11 @@ export interface UpdatePinData extends Msg {
 	PinData: PinData;
 }
 
+export interface AlertBroadCast extends Msg {
+	MsgType: MessageTypes.Alert;
+	AlertData: IAlert;
+}
+
 export interface BadMessage {
 	MsgType: undefined;
 }
@@ -47,4 +54,5 @@ export type UnknownMsg =
 	| HelloClient
 	| PinMoved
 	| BadMessage
-	| UpdatePinData;
+	| UpdatePinData
+	| AlertBroadCast;

@@ -5,6 +5,9 @@
 	import { onMount } from 'svelte';
 	import { MessageTypes } from '../Lib/messageTypes';
 	import { Global } from '../Lib/globals';
+	import { playerIDStore } from '../Lib/PlayerID';
+	import AlertManager from '../Lib/AlertManager.svelte';
+	import { Alert } from '../Lib/Alert';
 
 	let DMTools = false;
 	let DevTools = false;
@@ -29,9 +32,11 @@
 		width: number,
 		height: number,
 		Hue: number,
+		Owner: number = Number(playerID),
 		ID = globalPinCounter++
 	) {
 		let pin: PinData = {
+			OwnerID: Owner,
 			ID,
 			Name: name,
 			width: width,
@@ -50,15 +55,20 @@
 
 	$: PinList, DumpMovedPins();
 
-	let playerID = -1;
+	$: playerID = $playerIDStore;
 
 	let DefaultPinHue = 0;
 
 	let ws: WebSocket;
 	onMount(() => {
-		let port = 10232;
 		let webSocketURL = `ws://${window.location.hostname}:10232`;
 		ws = new WebSocket(webSocketURL);
+
+		debugger;
+
+		let tempGlobal = $Global;
+		tempGlobal.WebSocketConnection = ws;
+		Global.set(tempGlobal);
 
 		ws.onmessage = function (msg) {
 			let data: MessageFormats.UnknownMsg = JSON.parse(msg.data);
@@ -72,9 +82,10 @@
 				case MessageTypes.HelloClient:
 					{
 						console.log('Client Got Hello Setting Player ID');
-						playerID = data.playerID;
+						playerIDStore.set(data.playerID);
 						PinList = data.PinDataList;
-						DefaultPinHue = (playerID - 1) * 40;
+						DefaultPinHue = (data.playerID - 1) * 40;
+						MapURI = data.ActiveMap;
 						globalPinCounter =
 							data.PinDataList.reduce((previous, current) => {
 								if (current.ID > previous) {
@@ -140,6 +151,11 @@
 						MapLoaded();
 					}
 					break;
+				case MessageTypes.Alert:
+					{
+						Alert.set(data.AlertData);
+					}
+					break;
 				default:
 					console.warn('Unknown Message received', data);
 					break;
@@ -189,6 +205,7 @@
 	}
 
 	function updateGlobal() {
+		let LocalGlobal = $Global; //TODO: Not tired intoxicated me fix this shitty code
 		Global.set({ DevTools, DMTools });
 	}
 
@@ -223,9 +240,20 @@
 
 		ws.send(JSON.stringify(msg));
 	}
+
+	function DEBUGPing() {
+		Alert.set({
+			duration: 1000,
+			Message: 'PING!',
+			BroadCast: true
+		});
+	}
 </script>
 
 <main>
+	<div class="AlertManager">
+		<AlertManager />
+	</div>
 	<div class="Content">
 		<img
 			draggable="false"
@@ -243,6 +271,7 @@
 				bind:Modified={PinData.Modified}
 				bind:name={PinData.Name}
 				bind:hue={PinData.HueShift}
+				bind:PinOwner={PinData.OwnerID}
 				width={pinWidth}
 				height={pinHeight}
 			/>
@@ -261,6 +290,7 @@
 					DMTools = !DMTools;
 				}}>Toggle DM Tools</button
 			>
+			<p>You are player {playerID}</p>
 
 			{#if DMTools}
 				<button on:click={AddPin}>Add Pin</button>
@@ -271,7 +301,6 @@
 						DevTools = !DevTools;
 					}}>Toggle Dev Tools</button
 				>
-				<p>You are player {playerID}</p>
 
 				{#if PinList.length > 0}
 					Pin Management
@@ -279,7 +308,8 @@
 						<thead>
 							<tr>
 								<th>Name</th>
-								<th>ID</th>
+								<th>Player Owner</th>
+								<th>Pin ID</th>
 								<th>XPos</th>
 								<th>YPos</th>
 								<th>Hue</th>
@@ -294,6 +324,16 @@
 											type="text"
 											name="PinName"
 											bind:value={PinData.Name}
+											on:blur={() => {
+												UpdatePin(PinData);
+											}}
+										/>
+									</td>
+									<td>
+										<input
+											type="number"
+											name="PinOwner"
+											bind:value={PinData.OwnerID}
 											on:blur={() => {
 												UpdatePin(PinData);
 											}}
@@ -335,6 +375,7 @@
 					{JSON.stringify(mapDimensions, null, 2)}
 					pinWidth: {pinWidth} pinHeight: {pinHeight}
 				</pre>
+					<button on:click={DEBUGPing}>Ping!</button>
 				{/if}
 			{:else}
 				<input type="text" bind:value={playerName} placeholder="Please Enter Player Name" />
@@ -391,5 +432,13 @@
 		position: relative;
 		width: max-content;
 		height: max-content;
+	}
+
+	.AlertManager {
+		top: 0;
+		right: 0;
+		bottom: 0;
+		position: absolute;
+		z-index: 10000;
 	}
 </style>
