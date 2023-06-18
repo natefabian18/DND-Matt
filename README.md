@@ -1,38 +1,16 @@
-# create-svelte
+# DND Matt
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+A DND Game Mat that doesn't suck and doesn't ask for your money  
+Powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
 
-## Creating a project
+## Why?
 
-If you're seeing this, you've probably already done this step. Congrats!
+There is no simple open free way to have a virtual online game board for playing DND
 
-```bash
-# create a new project in the current directory
-npm create svelte@latest
+## How it works
 
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+Vite run the backend which serves a svelte website that makes a websocket connection to keep all the players in sync.
 
-## Developing
+## Setup
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```bash
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```bash
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+As of right now a plugin for vite runs the websocket server so it can all be run under one command. `npm run dev` create the default svelteKit server and the websocket server.
