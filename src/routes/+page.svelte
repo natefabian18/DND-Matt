@@ -6,6 +6,8 @@
 	import { Global } from '../Lib/globals';
 	import TapeMeasure from '../Lib/TapeMeasure.svelte';
 
+	export let data;
+
 	let DMTools = false;
 	let DevTools = false;
 	let pinWidth = 100;
@@ -180,7 +182,7 @@
 		<img
 			draggable="false"
 			class="MapImage"
-			src={'/Maps' + MapURI}
+			src={'/Maps/' + MapURI}
 			alt="Invalid Map Value"
 			bind:this={Map}
 			on:load={MapLoaded}
@@ -223,6 +225,11 @@
 			{#if DMTools}
 				<button on:click={AddPin}>Add Pin</button>
 				<input type="text" bind:value={MapURI} />
+				<select name="MapURI" bind:value={MapURI}>
+					{#each data.FileList as URI}
+						<option value={URI}>{URI}</option>
+					{/each}
+				</select>
 				<button on:click={UpdateMap}>Update Map for all</button>
 				<button
 					on:click={() => {
@@ -322,6 +329,7 @@
 		inset: 0;
 		z-index: 5000;
 	}
+	select,
 	button,
 	input {
 		padding: 0;
