@@ -3,10 +3,11 @@
 	import MessageManager from '../Lib/MessageManager';
 	import { Global } from '../Lib/globals';
 	import AlertManager from '../Lib/AlertManager.svelte';
+	import { browser } from '$app/environment';
 
 	//#region Initialize websocket
 	const webSocketURL = `ws://${window.location.hostname}:10232`;
-	if (typeof ws == 'undefined') {
+	if (browser) {
 		const ws = new WebSocket(webSocketURL);
 		ws.onmessage = MessageManager;
 		Global.WebSocketConnection.set(ws);

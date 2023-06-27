@@ -9,7 +9,8 @@ export enum MessageTypes {
 	PinDeleted = 5,
 	PinUpdated = 6,
 	Alert = 7,
-	TapeMeasureMoved = 8
+	TapeMeasureMoved = 8,
+	ForceWholePinList = 9
 }
 
 export interface Msg {
@@ -63,6 +64,11 @@ export interface TapeMeasureMoved extends Msg {
 	};
 }
 
+export interface ForceWholePinList extends Msg {
+	MsgType: MessageTypes.ForceWholePinList;
+	PinList: Array<PinData>;
+}
+
 export interface BadMessage {
 	MsgType: undefined;
 }
@@ -76,4 +82,5 @@ export type UnknownMsg =
 	| BadMessage
 	| UpdatePinData
 	| AlertBroadCast
-	| TapeMeasureMoved;
+	| TapeMeasureMoved
+	| ForceWholePinList;

@@ -42,6 +42,7 @@ export default function HandleMessage(msg: MessageEvent<any>) {
 					Color: 'hsl(135, 61%, 37%)',
 					TextColor: '#000000'
 				});
+				Store.Global.MapURI.set(data.ActiveMap);
 			}
 			break;
 		case MessageFormats.MessageTypes.PinMoved:
@@ -99,6 +100,12 @@ export default function HandleMessage(msg: MessageEvent<any>) {
 		case MessageFormats.MessageTypes.TapeMeasureMoved:
 			{
 				Store.Global.TapeMeasureValues.set(data.TapeMeasurePositions);
+			}
+			break;
+
+		case MessageFormats.MessageTypes.ForceWholePinList:
+			{
+				Store.Global.PinList.set(data.PinList);
 			}
 			break;
 		default:

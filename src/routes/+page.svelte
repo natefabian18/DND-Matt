@@ -171,6 +171,27 @@
 			BroadCast: true
 		});
 	}
+
+	function ForceWholePinList() {
+		PinList.forEach((item) => {
+			item.Modified = false;
+		});
+
+		let msg: MessageFormats.ForceWholePinList = {
+			MsgType: MessageFormats.MessageTypes.ForceWholePinList,
+			PinList: PinList
+		};
+
+		ws.send(JSON.stringify(msg));
+
+		Store.Alert.set({
+			Color: 'red',
+			TextColor: 'white',
+			duration: 2000,
+			Message: 'PinList has been force reset',
+			BroadCast: true
+		});
+	}
 	//#endregion
 </script>
 
@@ -286,8 +307,13 @@
 											on:blur={() => {
 												UpdatePin(PinData);
 											}}
-										/></td
-									>
+										/>
+										<img
+											src="/Pin.png"
+											alt="No Pin!"
+											style="filter: hue-rotate({PinData.HueShift}deg); height: 28.5px;"
+										/>
+									</td>
 									<td
 										><button
 											on:click={() => {
@@ -302,6 +328,7 @@
 				{/if}
 
 				{#if DevTools}
+					<button on:click={ForceWholePinList}>FORCE PINLIST</button>
 					<p>PinList</p>
 					<pre>
 					{JSON.stringify(PinList, null, 2)}
@@ -316,7 +343,14 @@
 			{:else}
 				<input type="text" bind:value={playerName} placeholder="Please Enter Player Name" />
 				<label for="DefaultPlayerHue">Hue</label>
-				<input type="number" name="DefaultPlayerHue" bind:value={DefaultPinHue} />
+				<div style="display: flex;">
+					<input type="number" name="DefaultPlayerHue" bind:value={DefaultPinHue} />
+					<img
+						src="/Pin.png"
+						alt="No Pin!"
+						style="filter: hue-rotate({DefaultPinHue}deg); height: 28.5px; aspect-ratio: 1 / 1;"
+					/>
+				</div>
 				<button on:click={AddPin}>Add Pin</button>
 			{/if}
 		{/if}
@@ -332,9 +366,9 @@
 	select,
 	button,
 	input {
-		padding: 0;
-		height: 1.5em;
-		margin: 0;
+		padding: 0 !important;
+		height: 1.5em !important;
+		margin: 0 !important;
 	}
 
 	.ToolBar {

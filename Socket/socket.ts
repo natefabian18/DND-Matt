@@ -5,7 +5,7 @@ import type { PinData } from '../src/Lib/Pin';
 const port = 10232;
 let SocketServer: WebSocketServer;
 
-const PinList: Array<PinData> = [];
+let PinList: Array<PinData> = [];
 let ActiveMap = '/map_32x32.png';
 const ConnectionList: Array<WebSocket> = [];
 
@@ -18,11 +18,20 @@ function BroadcastMessageToAllPlayers(
 	});
 }
 
+function getNextEmptySlot(ConnectionList: Array<any>) {
+	let counter = 0;
+	let isTaken = ConnectionList.findIndex((item) => item.ID == counter);
+
+	while (isTaken != -1) {
+		counter++;
+		isTaken = ConnectionList.findIndex((item) => item.ID == counter);
+	}
+	return counter;
+}
+
 export const PluginValue = {
 	name: 'WebSocketServer',
 	configureServer() {
-		let globalPlayerCounter = 1;
-
 		console.log('Setting up the webSocket Server');
 		SocketServer = new WebSocketServer({
 			port: port,
@@ -52,11 +61,13 @@ export const PluginValue = {
 		SocketServer.on('connection', (SocketConnection) => {
 			console.log('Connection Opened');
 
+			SocketConnection.ID = getNextEmptySlot(ConnectionList);
+
 			ConnectionList.push(SocketConnection);
 
 			const helloClientData: MessageFormats.HelloClient = {
 				MsgType: MessageFormats.MessageTypes.HelloClient,
-				playerID: globalPlayerCounter++,
+				playerID: SocketConnection.ID,
 				PinDataList: PinList,
 				ActiveMap: ActiveMap
 			};
@@ -151,6 +162,15 @@ export const PluginValue = {
 							);
 						}
 						break;
+					case MessageFormats.MessageTypes.ForceWholePinList:
+						{
+							PinList = data.PinList;
+							BroadcastMessageToAllPlayers(
+								ConnectionList.filter((connection) => connection != SocketConnection),
+								data
+							);
+						}
+						break;
 					default:
 						console.log('Got Unknown Message', data);
 						break;
@@ -159,6 +179,10 @@ export const PluginValue = {
 
 			SocketConnection.on('close', (message) => {
 				console.log('Connection to socket closed', message);
+
+				const ClientID = ConnectionList.findIndex((item) => item == SocketConnection);
+
+				ConnectionList.splice(ClientID, 1);
 			});
 
 			SocketConnection.on('error', (message) => {
