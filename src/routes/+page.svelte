@@ -372,7 +372,7 @@
 	}
 
 	.ToolBar {
-		position: absolute;
+		position: fixed;
 		top: 0.25em;
 		left: 0.25em;
 		background-color: var(--background-color);

@@ -27,7 +27,7 @@
 		top: 2em;
 		right: 2em;
 		bottom: 2em;
-		position: absolute;
+		position: fixed;
 		z-index: 10000;
 	}
 </style>
