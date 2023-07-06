@@ -3,6 +3,7 @@
 	import { cubicInOut } from 'svelte/easing';
 	import { Global } from '../Lib/globals';
 	import { playerIDStore } from '../Lib/PlayerID';
+	import { Store } from './StoreCollection';
 
 	//Base Credit to https://svelte.dev/repl/7d674cc78a3a44beb2c5a9381c7eb1a9?version=3.29.7
 	export let Modified = false;
@@ -51,12 +52,25 @@
 	});
 
 	function onMouseDown() {
-		moving = true;
+		if (PinOwner == $playerIDStore || isDM) {
+			moving = true;
+		} else {
+			Store.Alert.set({
+				BroadCast: false,
+				duration: 800,
+				Message: 'Thats not your pin',
+				Color: 'red',
+				TextColor: '#ffffff'
+			});
+		}
 	}
 
 	function onDragStart(e: TouchEvent) {
-		moving = true;
-		e.preventDefault();
+		if (PinOwner != $playerIDStore && !isDM) {
+			moving = true;
+			e.preventDefault();
+		} else {
+		}
 	}
 
 	function onMouseMove(e: MouseEvent) {
@@ -122,7 +136,7 @@
 	on:touchstart={onDragStart}
 	on:touchmove={onDragMove}
 	style="left: {$left}px; top: {$top}px;
-	pointer-events: {PinOwner != $playerIDStore && !isDM ? 'none' : 'unset'};
+	z-index: {PinOwner == $playerIDStore || isDM ? 5000 : 1000}
 	"
 	class="draggable"
 >
