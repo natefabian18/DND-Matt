@@ -21,11 +21,11 @@
 	});
 
 	function OnTapeStart(e: MouseEvent) {
-		startingPoint = [e.clientX, e.clientY];
+		startingPoint = [e.pageX, e.pageY];
 	}
 
 	function OnTapeEnd(e: MouseEvent) {
-		endingPoint = [e.clientX, e.clientY];
+		endingPoint = [e.pageX, e.pageY];
 		Alert.set({
 			BroadCast: true,
 			duration: 2000,
@@ -78,8 +78,8 @@
 
 <style>
 	.Container {
-		height: 100vh;
-		width: 100vw;
+		height: 100%;
+		width: 100%;
 	}
 	.Point {
 		display: flex;

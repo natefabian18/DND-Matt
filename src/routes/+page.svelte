@@ -358,6 +358,10 @@
 </main>
 
 <style>
+	main {
+		position: relative;
+	}
+
 	.FloatAbove {
 		position: absolute;
 		inset: 0;
